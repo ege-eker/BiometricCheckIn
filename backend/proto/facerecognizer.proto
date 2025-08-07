@@ -69,5 +69,5 @@ message RegisterCompletePersonRequest {
 message RegisterCompletePersonResponse {
   bool success = 1;
   string message = 2;
-  int32 person_id = 3;
+  int32 person_id = 3; // return the ID of the registered person when successful
 }
