@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package facerecognizer;
+
+service FaceRecognizer {
+  rpc Recognize (FaceRequest) returns (FaceResponse);
+
+  // Deprecated: RegisterPerson will be removed
+  rpc RegisterPerson (RegisterPersonRequest) returns (RegisterPersonResponse); // deprecated, will be removed
+
+  rpc AddEmbedding(AddEmbeddingRequest) returns (AddEmbeddingResponse);
+
+  // RegisterCompletePerson combines registration and embeddings in one call
+  rpc RegisterCompletePerson(RegisterCompletePersonRequest) returns (RegisterCompletePersonResponse);
+}
+
+message FaceRequest {
+    string image_base64 = 1;
+}
+
+message FaceResponse {
+    string name = 1;
+    string surname = 2;
+    int32 age=3;
+    string nationality= 4;
+    optional string flight_no = 5; // optional, if available
+    string passport_no = 6;
+    float similarity = 7; // similarity score between 0 and 1
+}
+
+// Will be removed, deprecated
+message RegisterPersonRequest {
+    string name=1;
+    string surname=2;
+    int32 age=3;
+    string nationality=4;
+    optional string flight_no=5;
+    string passport_no=6;
+    string image_base64 = 7; // cropped face image in base64 format
+}
+
+// Will be removed, deprecated
+message RegisterPersonResponse {
+    bool success = 1;
+    string message = 2;
+    int32 person_id = 3;  // return the ID of the registered person when successful
+}
+
+message AddEmbeddingRequest {
+  int32 person_id = 1;
+  string image_base64 = 2;
+}
+
+message AddEmbeddingResponse {
+  bool success = 1;
+  string message = 2; // message indicating success or failure
+}
+
+message RegisterCompletePersonRequest {
+  string name = 1;
+  string surname = 2;
+  int32 age = 3;
+  string nationality = 4;
+  optional string flight_no = 5;
+  string passport_no = 6;
+  repeated string images = 7; // list of base64 encoded images for embeddings
+}
+
+message RegisterCompletePersonResponse {
+  bool success = 1;
+  string message = 2;
+  int32 person_id = 3;
+}
