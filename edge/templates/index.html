@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yüz Tanıma Sistemi</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 5px;
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .tab.active {
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            background-color: white;
+            color: #3498db;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .camera-container {
+            position: relative;
+            width: 100%;
+            margin: 20px 0;
+            text-align: center;
+        }
+        #video-feed, #register-video-feed {
+            max-width: 100%;
+            border: 3px solid #3498db;
+            border-radius: 5px;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        .btn-success {
+            background-color: #2ecc71;
+            color: white;
+        }
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .btn-warning {
+            background-color: #f39c12;
+            color: white;
+        }
+        button:hover {
+            opacity: 0.8;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .result-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+            display: none;
+        }
+        .result-item {
+            margin-bottom: 10px;
+        }
+        .result-label {
+            font-weight: bold;
+            display: inline-block;
+            width: 100px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .register-progress {
+            margin-top: 20px;
+            display: none;
+        }
+        .progress-bar {
+            height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .progress {
+            height: 100%;
+            background-color: #3498db;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #recognition-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            z-index: 1000;
+        }
+        .modal-content {
+            position: relative;
+            margin: 5% auto;
+            width: 80%;
+            max-width: 800px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #aaa;
+        }
+        .close-btn:hover {
+            color: black;
+        }
+        #result-image {
+            max-width: 100%;
+            margin-bottom: 20px;
+            border: 2px solid #3498db;
+            border-radius: 5px;
+        }
+        .alert {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            color: white;
+        }
+        .alert-success {
+            background-color: #2ecc71;
+        }
+        .alert-danger {
+            background-color: #e74c3c;
+        }
+        .alert-warning {
+            background-color: #f39c12;
+        }
+        #alert-box {
+            display: none;
+        }
+
+        /* Confirmation panel style */
+        #confirmation-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            z-index: 1000;
+        }
+
+        .confirmation-content {
+            position: relative;
+            margin: 5% auto;
+            width: 90%;
+            max-width: 900px;
+            background-color: white;
+            padding: 25px;
+            border-radius: 5px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .photo-preview-container {
+            display: flex;
+            margin: 20px 0;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .photo-preview {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .person-info {
+            flex: 1;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            min-width: 300px;
+        }
+
+        .thumbnails {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+
+        .thumbnail {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border: 2px solid #3498db;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .thumbnail.selected {
+            border-color: #2ecc71;
+            box-shadow: 0 0 10px #2ecc71;
+            transform: scale(1.05);
+        }
+
+        .selected-photo-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        #selected-photo {
+            max-width: 100%;
+            max-height: 300px;
+            border: 3px solid #3498db;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .person-info p {
+            margin: 5px 0;
+            line-height: 1.5;
+        }
+
+        .person-info strong {
+            display: inline-block;
+            width: 100px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Face Recognition System</h1>
+
+        <div id="alert-box" class="alert">
+            <!-- Alerts goes here -->
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="recognize">Yüz Tanıma</div>
+            <div class="tab" data-tab="register">Yeni Kayıt</div>
+        </div>
+
+        <div class="tab-content active" id="recognize-tab">
+            <div class="camera-container">
+                <img id="video-feed" src="/video_feed" alt="Camera Feed">
+            </div>
+
+            <div class="controls">
+                <button id="recognize-btn" class="btn-primary">Recognize Face</button>
+            </div>
+
+            <div class="loading" id="recognize-loading">
+                <div class="loading-spinner"></div>
+                <p>Recognizing...</p>
+            </div>
+
+            <div class="result-panel" id="result-panel">
+                <h3>Recognition Result:</h3>
+                <div class="result-item">
+                    <span class="result-label">Name:</span>
+                    <span id="result-name"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Age:</span>
+                    <span id="result-age"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Nationality:</span>
+                    <span id="result-nationality"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Passport:</span>
+                    <span id="result-passport"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Flight No:</span>
+                    <span id="result-flight"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Similarity:</span>
+                    <span id="result-similarity"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="register-tab">
+            <div class="camera-container">
+                <img id="register-video-feed" src="/video_feed" alt="Camera Feed">
+            </div>
+
+            <div id="registration-form">
+                <h2>Register New Person</h2>
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" id="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="surname">Surname</label>
+                    <input type="text" id="surname" required>
+                </div>
+                <div class="form-group">
+                    <label for="age">Age</label>
+                    <input type="number" id="age" min="0" max="120" required>
+                </div>
+                <div class="form-group">
+                    <label for="nationality">Nationality</label>
+                    <input type="text" id="nationality" required>
+                </div>
+                <div class="form-group">
+                    <label for="flight_no">Flight No (Optional)</label>
+                    <input type="text" id="flight_no">
+                </div>
+                <div class="form-group">
+                    <label for="passport_no">Passport No</label>
+                    <input type="text" id="passport_no" required>
+                </div>
+
+                <div class="controls">
+                    <button id="start-register-btn" class="btn-success">Start Registeration</button>
+                </div>
+            </div>
+
+            <div class="register-progress" id="register-progress">
+                <h3>Registeration Progress</h3>
+                <p>Please take 5 pictures with diff. poses.</p>
+                <div class="progress-bar">
+                    <div class="progress" id="progress-bar"></div>
+                </div>
+                <p><span id="progress-count">0</span>/5 photos taken</p>
+
+                <div class="controls">
+                    <button id="capture-btn" class="btn-primary">Take Photo</button>
+                    <button id="undo-btn" class="btn-warning" disabled>Cancel Last Photo</button>
+                    <button id="cancel-btn" class="btn-danger">Cancel</button>
+                </div>
+            </div>
+
+            <div class="loading" id="register-loading">
+                <div class="loading-spinner"></div>
+                <p>Processing...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Result Modal -->
+    <div id="recognition-modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>Register Result</h2>
+            <img id="result-image" src="" alt="Recognized Face">
+            <div class="result-item">
+                <span class="result-label">Name:</span>
+                <span id="modal-name"></span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Age:</span>
+                <span id="modal-age"></span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Nationality:</span>
+                <span id="modal-nationality"></span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Passport:</span>
+                <span id="modal-passport"></span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Flight No:</span>
+                <span id="modal-flight"></span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">Similarity:</span>
+                <span id="modal-similarity"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registeration Confirmation Modal -->
+    <div id="confirmation-modal">
+        <div class="confirmation-content">
+            <span class="close-btn" id="confirm-close">&times;</span>
+            <h2>Kayıt Onayı</h2>
+            <p>All photos taken. Do you want to send all the information?</p>
+
+            <div class="photo-preview-container">
+                <div class="photo-preview">
+                    <h3>Taken Photos</h3>
+                    <div id="photo-thumbnails" class="thumbnails">
+                        <!-- Photos thumbnals -->
+                    </div>
+
+                    <div class="selected-photo-container">
+                        <h4>Selected Photo</h4>
+                        <img id="selected-photo" src="" alt="Selected Photo">
+                    </div>
+                </div>
+
+                <div class="person-info">
+                    <h3>Person Info</h3>
+                    <p><strong>Name:</strong> <span id="confirm-name"></span></p>
+                    <p><strong>Surname:</strong> <span id="confirm-surname"></span></p>
+                    <p><strong>Age:</strong> <span id="confirm-age"></span></p>
+                    <p><strong>Nationality:</strong> <span id="confirm-nationality"></span></p>
+                    <p><strong>Passport No:</strong> <span id="confirm-passport"></span></p>
+                    <p><strong>Flight No:</strong> <span id="confirm-flight"></span></p>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="confirm-btn" class="btn-success">Complete Registeration</button>
+                <button id="back-btn" class="btn-primary">Go Back</button>
+                <button id="confirm-cancel-btn" class="btn-danger">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let registrationFormData = null;
+        let capturedImages = [];
+        const REQUIRED_PHOTO_COUNT = 5;
+        let registrationInProgress = false;
+        let selectedThumbnailIndex = 0;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Alert function
+            function showAlert(message, type) {
+                const alertBox = document.getElementById('alert-box');
+                alertBox.textContent = message;
+                alertBox.className = `alert alert-${type}`;
+                alertBox.style.display = 'block';
+
+                // After 5 seconds, hide the alert
+                setTimeout(() => {
+                    alertBox.style.display = 'none';
+                }, 5000);
+            }
+
+            // Tab switching functionality
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+                    this.classList.add('active');
+                    document.getElementById(this.dataset.tab + '-tab').classList.add('active');
+                });
+            });
+
+            // Start camera on page load
+            fetch('/start_camera', {
+                method: 'POST'
+            }).then(response => response.json())
+              .then(data => console.log('Cam Status:', data.message))
+              .catch(error => {
+                  console.error('Cam start error:', error);
+                  showAlert('Couldnt start cam!', 'danger');
+              });
+
+            // Recognize face button
+            document.getElementById('recognize-btn').addEventListener('click', function() {
+                // Progress
+                document.getElementById('recognize-loading').style.display = 'block';
+                document.getElementById('result-panel').style.display = 'none';
+
+                fetch('/recognize_face', {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Hide loading spinner
+                    document.getElementById('recognize-loading').style.display = 'none';
+
+                    if (data.success) {
+                        const result = data.result;
+
+                        // Modal information
+                        document.getElementById('modal-name').textContent = `${result.name} ${result.surname}`;
+                        document.getElementById('modal-age').textContent = result.age;
+                        document.getElementById('modal-nationality').textContent = result.nationality;
+                        document.getElementById('modal-passport').textContent = result.passport_no;
+                        document.getElementById('modal-flight').textContent = result.flight_no || '-';
+                        document.getElementById('modal-similarity').textContent = `%${Math.round(result.similarity * 100)}`;
+
+                        // Important: Take a image from the video feed
+                        const videoImg = document.getElementById('video-feed');
+
+                        // Get the video image dimensions to create a canvas
+                        const canvas = document.createElement('canvas');
+                        canvas.width = videoImg.width;
+                        canvas.height = videoImg.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(videoImg, 0, 0, canvas.width, canvas.height);
+
+                        // Take the image data URL from the canvas
+                        const imageDataUrl = canvas.toDataURL('image/jpeg');
+
+                        // Set the result image source to the captured image
+                        document.getElementById('result-image').src = imageDataUrl;
+
+                        // If face_location is provided, draw the face rectangle
+                        if (result.face_location) {
+                            const [x, y, w, h] = result.face_location;
+
+                            // Create a new canvas to annotate the original image
+                            const annotatedCanvas = document.createElement('canvas');
+                            annotatedCanvas.width = canvas.width;
+                            annotatedCanvas.height = canvas.height;
+                            const annotatedCtx = annotatedCanvas.getContext('2d');
+
+                            // First draw the original image
+                            annotatedCtx.drawImage(canvas, 0, 0);
+
+                            // Draw the rectangle around the face
+                            annotatedCtx.strokeStyle = '#00ff00';  // Green color for the rectangle
+                            annotatedCtx.lineWidth = 3;
+                            annotatedCtx.strokeRect(
+                                x * (annotatedCanvas.width / videoImg.naturalWidth),
+                                y * (annotatedCanvas.height / videoImg.naturalHeight),
+                                w * (annotatedCanvas.width / videoImg.naturalWidth),
+                                h * (annotatedCanvas.height / videoImg.naturalHeight)
+                            );
+
+                            // Add
+                            const resultImage = document.getElementById('result-image');
+                            resultImage.src = annotatedCanvas.toDataURL('image/jpeg');
+                        }
+
+                        // Show modal
+                        document.getElementById('recognition-modal').style.display = 'block';
+
+                        // Show result panel
+                        document.getElementById('result-name').textContent = `${result.name} ${result.surname}`;
+                        document.getElementById('result-age').textContent = result.age;
+                        document.getElementById('result-nationality').textContent = result.nationality;
+                        document.getElementById('result-passport').textContent = result.passport_no;
+                        document.getElementById('result-flight').textContent = result.flight_no || '-';
+                        document.getElementById('result-similarity').textContent = `%${Math.round(result.similarity * 100)}`;
+                        document.getElementById('result-panel').style.display = 'block';
+                    } else {
+                        showAlert(data.message, 'danger');
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('recognize-loading').style.display = 'none';
+                    console.error('Error:', error);
+                    showAlert('An error occured: ' + error, 'danger');
+                });
+            });
+
+            // Modal close button
+            document.querySelector('.close-btn').addEventListener('click', function() {
+                document.getElementById('recognition-modal').style.display = 'none';
+            });
+
+            // Modal background click to close
+            window.addEventListener('click', function(event) {
+                if (event.target === document.getElementById('recognition-modal')) {
+                    document.getElementById('recognition-modal').style.display = 'none';
+                }
+                if (event.target === document.getElementById('confirmation-modal')) {
+                    document.getElementById('confirmation-modal').style.display = 'none';
+                    document.getElementById('register-progress').style.display = 'block';
+                }
+            });
+
+            // Confirmation modal close button
+            document.getElementById('confirm-close').addEventListener('click', function() {
+                document.getElementById('confirmation-modal').style.display = 'none';
+                document.getElementById('register-progress').style.display = 'block';
+            });
+
+            // Start registration button
+            document.getElementById('start-register-btn').addEventListener('click', function() {
+                console.log('Pressed start registration button');
+
+                // get form values
+                const name = document.getElementById('name').value;
+                const surname = document.getElementById('surname').value;
+                const age = document.getElementById('age').value;
+                const nationality = document.getElementById('nationality').value;
+                const flight_no = document.getElementById('flight_no').value;
+                const passport_no = document.getElementById('passport_no').value;
+
+                // validate form inputs
+                if (!name || !surname || !age || !nationality || !passport_no) {
+                    showAlert('Please fill all required fields!', 'danger');
+                    return;
+                }
+
+                // Save form data
+                registrationFormData = {
+                    name, surname, age, nationality, flight_no, passport_no
+                };
+
+                console.log('Saved form data:', registrationFormData);
+
+                // Clear previously captured images
+                capturedImages = [];
+                registrationInProgress = true;
+
+                // Re enable the undo button
+                document.getElementById('undo-btn').disabled = true;
+
+                // Hide registration form and show progress
+                document.getElementById('registration-form').style.display = 'none';
+                document.getElementById('register-progress').style.display = 'block';
+
+                // Reset progress bar
+                document.getElementById('progress-bar').style.width = '0%';
+                document.getElementById('progress-count').textContent = '0';
+
+                showAlert('Registeration started, please take 5 pictures', 'success');
+            });
+
+            // Taking photo button
+            document.getElementById('capture-btn').addEventListener('click', function() {
+                console.log('Pressed capture button');
+
+                if (!registrationFormData) {
+                    showAlert('Start the registeration process first!', 'danger');
+                    return;
+                }
+
+                // If enough photos are already captured, show alert
+                if (capturedImages.length >= REQUIRED_PHOTO_COUNT) {
+                    showAlert('All photos taken', 'warning');
+                    // If confirmation modal is not already open, show it
+                    if (document.getElementById('confirmation-modal').style.display !== 'block') {
+                        showConfirmationPanel();
+                    }
+                    return;
+                }
+
+                // Take a photo from the video feed
+                const videoImg = document.getElementById('register-video-feed');
+
+                // Make a canvas to draw the video image
+                const canvas = document.createElement('canvas');
+                canvas.width = videoImg.width;
+                canvas.height = videoImg.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(videoImg, 0, 0, canvas.width, canvas.height);
+
+                // Save the image data as base64
+                const imageDataUrl = canvas.toDataURL('image/jpeg');
+                const base64Data = imageDataUrl.split(',')[1]; // base64 kısmını al
+
+                // Add the captured image to the collection
+                capturedImages.push(base64Data);
+                console.log(`Photo ${capturedImages.length} saved`);
+
+                // Activate the undo button
+                document.getElementById('undo-btn').disabled = false;
+
+                // Update the progress bar
+                const progress = (capturedImages.length / REQUIRED_PHOTO_COUNT) * 100;
+                document.getElementById('progress-bar').style.width = progress + '%';
+                document.getElementById('progress-count').textContent = capturedImages.length;
+
+                showAlert(`Photo ${capturedImages.length}/${REQUIRED_PHOTO_COUNT} taken.`, 'success');
+
+                // If enough photos are captured, show confirmation panel
+                if (capturedImages.length >= REQUIRED_PHOTO_COUNT) {
+                    showConfirmationPanel();
+                }
+            });
+
+            // Undo last photo button
+            document.getElementById('undo-btn').addEventListener('click', function() {
+                if (!registrationFormData || capturedImages.length === 0) {
+                    showAlert('There is no undoable photo', 'danger');
+                    return;
+                }
+
+                // Clear the last captured image
+                capturedImages.pop();
+
+                // Update the progress bar
+                const progress = (capturedImages.length / REQUIRED_PHOTO_COUNT) * 100;
+                document.getElementById('progress-bar').style.width = progress + '%';
+                document.getElementById('progress-count').textContent = capturedImages.length;
+
+                showAlert('Cleared the last photo', 'success');
+
+                // If no photos left, disable the undo button
+                document.getElementById('undo-btn').disabled = capturedImages.length === 0;
+            });
+
+            // Cancel registration button
+            document.getElementById('cancel-btn').addEventListener('click', function() {
+                if (confirm('Are you sure you want to cancel the registeration process?')) {
+                    // Clear form and photo data
+                    registrationFormData = null;
+                    capturedImages = [];
+                    registrationInProgress = false;
+
+                    // Undo button reset
+                    document.getElementById('undo-btn').disabled = true;
+
+                    // Show registration form and hide progress
+                    document.getElementById('registration-form').style.display = 'block';
+                    document.getElementById('register-progress').style.display = 'none';
+
+                    showAlert('Registeration progress canceled.', 'success');
+                }
+            });
+
+            // Show confirmation panel function
+            function showConfirmationPanel() {
+                console.log("Showing confirmation panel");
+
+                // Show confirmation modal and hide progress
+                document.getElementById('register-progress').style.display = 'none';
+                document.getElementById('confirmation-modal').style.display = 'block';
+
+                // Fill confirmation data
+                document.getElementById('confirm-name').textContent = registrationFormData.name;
+                document.getElementById('confirm-surname').textContent = registrationFormData.surname;
+                document.getElementById('confirm-age').textContent = registrationFormData.age;
+                document.getElementById('confirm-nationality').textContent = registrationFormData.nationality;
+                document.getElementById('confirm-passport').textContent = registrationFormData.passport_no;
+                document.getElementById('confirm-flight').textContent = registrationFormData.flight_no || '-';
+
+                // Create thumbnails for captured images
+                const thumbnailsContainer = document.getElementById('photo-thumbnails');
+                thumbnailsContainer.innerHTML = ''; // First clear existing thumbnails
+
+                capturedImages.forEach((base64Data, index) => {
+                    const img = document.createElement('img');
+                    img.src = 'data:image/jpeg;base64,' + base64Data;
+                    img.className = 'thumbnail';
+                    img.title = `Photo ${index + 1}`;
+                    img.dataset.index = index;
+
+                    // Make the first thumbnail selected by default
+                    if (index === 0) {
+                        img.classList.add('selected');
+                        document.getElementById('selected-photo').src = img.src;
+                    }
+
+                    // Thumbnail click event
+                    img.addEventListener('click', function() {
+                        // Clear previously selected thumbnail
+                        document.querySelectorAll('.thumbnail.selected').forEach(thumb => {
+                            thumb.classList.remove('selected');
+                        });
+
+                        // Make this thumbnail selected
+                        this.classList.add('selected');
+
+                        // Big image update
+                        document.getElementById('selected-photo').src = this.src;
+                        selectedThumbnailIndex = parseInt(this.dataset.index);
+                    });
+
+                    thumbnailsContainer.appendChild(img);
+                });
+            }
+
+            // Confirmation modal confirm button
+            document.getElementById('confirm-btn').addEventListener('click', function() {
+                submitRegistration();
+            });
+
+            // Undo button
+            document.getElementById('back-btn').addEventListener('click', function() {
+                // Hide confirmation modal and show progress
+                document.getElementById('confirmation-modal').style.display = 'none';
+                document.getElementById('register-progress').style.display = 'block';
+            });
+
+            // Cancel confirmation button
+            document.getElementById('confirm-cancel-btn').addEventListener('click', function() {
+                if (confirm('Are you sure you want to cancel the registeration process?')) {
+                    registrationFormData = null;
+                    capturedImages = [];
+                    registrationInProgress = false;
+
+                    // Show registration form and hide progress
+                    document.getElementById('confirmation-modal').style.display = 'none';
+                    document.getElementById('register-progress').style.display = 'none';
+                    document.getElementById('registration-form').style.display = 'block';
+
+                    // Reset the progress bar
+                    document.getElementById('undo-btn').disabled = true;
+
+                    showAlert('Registeration process canceled.', 'success');
+                }
+            });
+
+            function submitRegistration() {
+                document.getElementById('register-loading').style.display = 'block';
+                document.getElementById('confirmation-modal').style.display = 'none';
+
+                const registrationData = {
+                    ...registrationFormData,
+                    images: capturedImages
+                };
+
+                console.log('Sending all registeration data:', {
+                    name: registrationData.name,
+                    images_count: registrationData.images.length
+                });
+
+                fetch('/submit_complete_registration', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(registrationData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('register-loading').style.display = 'none';
+
+                    if (data.success) {
+                        // Show register form, hide progress bar
+                        document.getElementById('registration-form').style.display = 'block';
+                        document.getElementById('register-progress').style.display = 'none';
+
+                        registrationFormData = null;
+                        capturedImages = [];
+                        registrationInProgress = false;
+
+                        document.getElementById('undo-btn').disabled = true;
+
+                        // clear the form
+                        document.getElementById('name').value = '';
+                        document.getElementById('surname').value = '';
+                        document.getElementById('age').value = '';
+                        document.getElementById('nationality').value = '';
+                        document.getElementById('flight_no').value = '';
+                        document.getElementById('passport_no').value = '';
+
+                        showAlert('Registeration is completed successfully', 'success');
+                    } else {
+                        // show confirm modal when error
+                        document.getElementById('confirmation-modal').style.display = 'block';
+                        showAlert(`Registeration process failed: ${data.message}`, 'danger');
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('register-loading').style.display = 'none';
+                    document.getElementById('confirmation-modal').style.display = 'block';
+                    console.error('Error:', error);
+                    showAlert('Error while sending registeration: ' + error, 'danger');
+                });
+            }
+
+            // Page close warn
+            window.addEventListener('beforeunload', function (e) {
+                if (registrationInProgress) {
+                    e.preventDefault();
+                    e.returnValue = 'Registeration is ongoing. Are you sure?';
+                    return e.returnValue;
+                }
+            });
+
+            // Konsol loglarını göster
+            console.log('JavaScript started');
+        });
+    </script>
